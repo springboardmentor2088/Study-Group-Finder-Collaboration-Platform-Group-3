@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import JoinGroupButton from "./JoinGroupButton";
 
 function CourseCard({ course }) {
   const navigate = useNavigate();
