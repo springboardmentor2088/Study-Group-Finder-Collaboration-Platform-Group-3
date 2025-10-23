@@ -1,19 +1,28 @@
 import React from "react";
-import Home from "./components/Home";
-import Nav from "./components/Nav";
-import Collab from "./components/Collab";
-import About from "./components/About";
-import Login from "./components/Login";
-import Signup from "./components/Signup";
-import BuildProfile from "./components/BuildProfile";
-import Dashboard from "./components/Dashboard";
-import Profile from "./components/Profile";
-import ForgotPassword from "./components/ForgotPassword";
-import MyCourses from "./components/MyCourses";
-import MyGroups from "./components/MyGroups";
-import FindPeers from "./components/FindPeers";
+import Home from "./components/Home.jsx";
+import Nav from "./components/Nav.jsx";
+import Collab from "./components/Collab.jsx";
+import About from "./components/About.jsx";
+import Login from "./components/Login.jsx";
+import Signup from "./components/Signup.jsx";
+import BuildProfile from "./components/BuildProfile.jsx";
+import Dashboard from "./components/Dashboard.jsx";
+import Profile from "./components/Profile.jsx";
+import ForgotPassword from "./components/ForgotPassword.jsx";
+import MyCourses from "./components/MyCourses.jsx";
+import MyGroups from "./components/MyGroups.jsx";
+import FindPeers from "./components/FindPeers.jsx";
+import GroupDetailPage from "./components/groups/GroupDetailPage";
+import GroupManagementPage from "./components/groups/GroupManagementPage.jsx";
 
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
+
+// A simple Protected Route Component
+function ProtectedRoute({ children }) {
+  const token = sessionStorage.getItem("token");
+  // If no token, redirect to login, replacing the current history entry
+  return token ? children : <Navigate to="/login" replace />;
+}
 
 const App = () => {
   return (
@@ -28,14 +37,67 @@ const App = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-
-          {/* Authenticated Routes */}
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/profile" element={<Profile />} />
           <Route path="/build-profile" element={<BuildProfile />} />
-          <Route path="/my-courses" element={<MyCourses />} />
-          <Route path="/my-groups" element={<MyGroups />} />
-          <Route path="/find-peers" element={<FindPeers />} />
+
+          {/* Authenticated Routes wrapped in ProtectedRoute */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-courses"
+            element={
+              <ProtectedRoute>
+                <MyCourses />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-groups"
+            element={
+              <ProtectedRoute>
+                <MyGroups />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/find-peers"
+            element={
+              <ProtectedRoute>
+                <FindPeers />
+              </ProtectedRoute>
+            }
+          />
+          {/* --- Group Routes --- */}
+          {/* IMPORTANT: The more specific route must come first */}
+          <Route
+            path="/group/:groupId/manage"
+            element={
+              <ProtectedRoute>
+                <GroupManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/group/:groupId"
+            element={
+              <ProtectedRoute>
+                <GroupDetailPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Optional: Add a 404 Not Found page for any unmatched URLs */}
           <Route path="*" element={<h1>404: Page Not Found</h1>} />

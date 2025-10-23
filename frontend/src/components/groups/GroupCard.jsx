@@ -1,64 +1,15 @@
-import React, { useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 
-const GroupCard = ({ group, isMember, onActionComplete }) => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
-
-  // Use the memberCount from the group prop and calculate the fullness percentage.
+const GroupCard = ({ group, isMember, isJoining, onJoinClick }) => {
   const fullness = (group.memberCount / group.memberLimit) * 100;
 
-  const handleJoinClick = async (e) => {
-    e.stopPropagation();
-    setError('');
-    setIsSubmitting(true);
-    const token = sessionStorage.getItem("token");
-
-    if (!token) {
-      alert("You must be logged in to join a group.");
-      setIsSubmitting(false);
-      return;
+  const getButtonText = () => {
+    if (isJoining) return "Processing...";
+    if (group.privacy.toLowerCase() === "private" && !group.hasPasskey) {
+      return "Request to Join";
     }
-
-    let passkey = null;
-    // If the group is private and has a passkey, prompt the user.
-    if (group.privacy.toLowerCase() === 'private' && group.hasPasskey) {
-      passkey = prompt("This is a private group. Please enter the passkey to join:");
-      // If the user cancels the prompt, stop the process.
-      if (passkey === null) {
-        setIsSubmitting(false);
-        return;
-      }
-    }
-
-    try {
-      const res = await fetch(`http://localhost:8145/api/groups/join/${group.groupId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        // Send the passkey in the body if it was provided.
-        body: JSON.stringify({ passkey: passkey })
-      });
-
-      if (res.ok) {
-        alert(`Successfully joined "${group.name}"!`);
-        if (onActionComplete) {
-          onActionComplete(); // Trigger the data refresh
-        }
-      } else {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to join group.');
-      }
-
-    } catch (err) {
-      console.error("Join group error:", err);
-      setError(err.message);
-      alert(`Error: ${err.message}`);
-    } finally {
-      setIsSubmitting(false);
-    }
+    return "Join Group";
   };
 
   return (
@@ -75,12 +26,13 @@ const GroupCard = ({ group, isMember, onActionComplete }) => {
             {group.privacy}
           </span>
           <div className="text-sm font-semibold text-gray-600">
-            {/* Display the correct member count from the group prop */}
             <span>{group.memberCount}</span> / <span>{group.memberLimit}</span>
           </div>
         </div>
         <h3 className="font-bold text-lg text-gray-800 mb-1">{group.name}</h3>
-        <p className="text-sm text-gray-500">{group.associatedCourse.courseName}</p>
+        <p className="text-sm text-gray-500">
+          {group.associatedCourse.courseName}
+        </p>
       </div>
 
       <div className="mt-4">
@@ -91,27 +43,49 @@ const GroupCard = ({ group, isMember, onActionComplete }) => {
           ></div>
         </div>
 
+        {isMember && group.userRole && (
+          <div className="text-center mb-3">
+            <span
+              className={`inline-block px-3 py-1 text-xs font-bold rounded-full ${
+                group.userRole.toLowerCase() === "admin"
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "bg-sky-100 text-sky-800"
+              }`}
+            >
+              {group.userRole}
+            </span>
+          </div>
+        )}
+
         {isMember ? (
-          <Link
-            to={`/group/${group.groupId}`}
-            className="block w-full text-center py-2 px-4 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 text-sm font-semibold transition-colors"
-          >
-            View Group
-          </Link>
+          <div className="flex space-x-2">
+            <Link
+              to={`/group/${group.groupId}`}
+              className="block w-full text-center py-2 px-4 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 text-sm font-semibold transition-colors"
+            >
+              View Group
+            </Link>
+            {group.userRole && group.userRole.toLowerCase() === "admin" && (
+              <Link
+                to={`/group/${group.groupId}/manage`}
+                className="block w-full text-center py-2 px-4 rounded-lg bg-blue-500 text-white hover:bg-blue-600 text-sm font-semibold transition-colors"
+              >
+                Manage
+              </Link>
+            )}
+          </div>
         ) : (
           <button
-            onClick={handleJoinClick}
-            disabled={isSubmitting}
-            className="w-full text-center py-2 px-4 rounded-lg bg-gradient-to-r from-purple-600 to-orange-500 text-white hover:opacity-90 text-sm font-semibold shadow-md transition-all transform hover:scale-105 disabled:opacity-50"
+            onClick={onJoinClick}
+            disabled={isJoining}
+            className="w-full text-center py-2 px-4 rounded-lg bg-gradient-to-r from-purple-600 to-orange-500 text-white hover:opacity-90 text-sm font-semibold shadow-md transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? 'Joining...' : 'Join Group'}
+            {getButtonText()}
           </button>
         )}
-        {error && <p className="text-red-500 text-xs mt-2 text-center">{error}</p>}
       </div>
     </div>
   );
 };
 
 export default GroupCard;
-
